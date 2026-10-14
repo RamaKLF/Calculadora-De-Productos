@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calculadora de trabajos</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{
+  --bg:#eef1f4;--surface:#ffffff;--ink:#14202b;--muted:#5d6b78;--line:#d6dde4;
+  --accent:#0f7b6c;--accent-ink:#ffffff;--danger:#b3261e;--total-bg:#14202b;--total-ink:#f2f6f9;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1419;--surface:#17202a;--ink:#e8eef3;--muted:#92a1ae;--line:#2a3643;
+  --accent:#3fc2ad;--accent-ink:#06211c;--danger:#ff8a80;--total-bg:#e8eef3;--total-ink:#0e1419;
+}}
+:root[data-theme="dark"]{
+  --bg:#0e1419;--surface:#17202a;--ink:#e8eef3;--muted:#92a1ae;--line:#2a3643;
+  --accent:#3fc2ad;--accent-ink:#06211c;--danger:#ff8a80;--total-bg:#e8eef3;--total-ink:#0e1419;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.45 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:640px;margin:0 auto;padding:20px 16px 170px}
+h1{font-size:1.5rem;font-weight:600;margin:4px 0 14px;letter-spacing:-.01em}
+h2{font-size:1.05rem;font-weight:600;margin:0 0 10px}
+.tabs{display:flex;gap:4px;background:var(--line);padding:4px;border-radius:10px;margin-bottom:16px}
+.tabs button{flex:1;border:none;background:transparent;color:var(--muted);padding:9px 6px;border-radius:7px;font-weight:500}
+.tabs button[aria-selected=true]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+section[hidden],.bar[hidden]{display:none}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+.row{display:grid;gap:8px;grid-template-columns:1fr 1fr}
+.row .full{grid-column:1/-1}
+.addrow{display:grid;gap:8px;grid-template-columns:1fr 80px auto;align-items:center}
+input,textarea,button,select{font:inherit;color:inherit}
+input,textarea,select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+input:focus-visible,textarea:focus-visible,button:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+label.f{display:block;font-size:.85rem;color:var(--muted);margin-bottom:3px}
+button{cursor:pointer;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:10px 14px}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button.ghost{border:none;background:none;color:var(--muted);padding:6px 8px}
+button.ghost:hover{color:var(--danger)}
+.msg{color:var(--danger);font-size:.88rem;min-height:1.2em;margin:8px 0 0}
+.msg.ok{color:var(--accent)}
+.hint{color:var(--muted);font-size:.85rem;margin:6px 0}
+details{margin-top:12px}summary{cursor:pointer;color:var(--muted);font-size:.95rem}
+details textarea{min-height:100px;margin:10px 0 6px;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.9rem}
+.list{list-style:none;margin:0 0 14px;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.list li{display:grid;grid-template-columns:1fr auto auto;gap:4px 12px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
+.list li:last-child{border-bottom:none}
+.list li.empty{display:block;text-align:center;color:var(--muted);padding:20px 14px}
+.pname{font-weight:500;overflow-wrap:anywhere}
+.mono,.unit,.sub,.left,.tot{font-family:"IBM Plex Mono",ui-monospace,monospace}
+.unit{color:var(--muted);font-size:.82rem}
+.sub{font-weight:600;text-align:right}
+.left{text-align:right;font-weight:600}.left small{display:block;color:var(--muted);font-weight:500;font-size:.78rem}
+.acts{display:flex;flex-direction:column;align-items:flex-end}
+.meter{height:5px;background:var(--line);border-radius:3px;margin-top:6px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--accent)}
+.head{display:flex;justify-content:space-between;align-items:baseline;margin:2px 2px 8px;color:var(--muted);font-size:.95rem}
+.out{margin:10px 0 0;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.92rem}
+.chk{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px}
+.chk input{width:auto;margin-top:4px}
+.btns{display:flex;gap:8px}.btns .primary{flex:1}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--total-bg);color:var(--total-ink);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+.bar-in{max-width:640px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.bar small{display:block;opacity:.75;font-size:.8rem}
+.bar .tot{font-size:1.8rem;font-weight:600;line-height:1.1;letter-spacing:-.02em}
+.bar button{background:transparent;color:inherit;border-color:currentColor;opacity:.9}
+.dlg{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.dlg[hidden]{display:none}
+.dlg-box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;width:100%;max-width:360px}
+.dlg-box p{margin:0 0 12px;font-weight:500}.dlg-box input{margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Calculadora de trabajos</h1>
+  <div class="tabs" role="tablist">
+    <button role="tab" data-tab="job">Trabajo</button>
+    <button role="tab" data-tab="stock">Stock</button>
+    <button role="tab" data-tab="hist">Historial</button>
+  </div>
+
+  <section id="tab-job">
+    <div class="panel">
+      <label class="f" for="jname">Nombre del trabajo</label>
+      <input id="jname" type="text" placeholder="Ej: Pintura living, casa de Marta" autocomplete="off">
+    </div>
+    <div class="panel">
+      <h2>Material usado</h2>
+      <label class="f" for="sel">Producto del stock</label>
+      <select id="sel"></select>
+      <div style="height:8px"></div>
+      <label class="f" for="used">Peso o cantidad que usaste</label>
+      <div class="addrow">
+        <input id="used" type="text" inputmode="decimal" placeholder="Ej: 250"><select id="usedU" aria-label="Unidad usada"></select>
+        <button id="addUse" class="primary">Sumar</button>
+      </div>
+      <p class="msg" id="msgJ" role="status"></p>
+    </div>
+    <div class="head"><span id="lineCount">Sin material</span></div>
+    <ul class="list" id="lines"></ul>
+    <div class="panel">
+      <h2>Mano de obra</h2>
+      <div class="row">
+        <div><label class="f" for="hours">Horas trabajadas</label><input id="hours" type="text" inputmode="decimal" placeholder="Ej: 6,5"></div>
+        <div><label class="f" for="rate">Tarifa por hora</label><input id="rate" type="text" inputmode="decimal" placeholder="Ej: 8000"></div>
+      </div>
+      <p class="out" id="laborOut"></p>
+    </div>
+    <div class="panel">
+      <label class="chk"><input type="checkbox" id="deduct"><span>Descontar lo usado del stock al finalizar. Lo que sobre queda para próximos trabajos.</span></label>
+      <div class="btns"><button id="finish" class="primary">Finalizar trabajo</button><button id="discard">Descartar</button></div>
+      <p class="msg" id="msgF" role="status"></p>
+    </div>
+  </section>
+
+  <section id="tab-stock" hidden>
+    <div class="panel">
+      <h2>Agregar al stock</h2>
+      <div class="row">
+        <div class="full"><label class="f" for="sn">Producto</label><input id="sn" type="text" placeholder="Ej: Pintura látex blanca" autocomplete="off"></div>
+        <div><label class="f" for="sq">Peso o cantidad que compraste</label><input id="sq" type="text" inputmode="decimal" placeholder="Ej: 25"></div>
+        <div><label class="f" for="su">Unidad</label>
+          <select id="su"><option>kg</option><option>g</option><option>L</option><option>ml</option><option>u</option><option>m</option><option>cm</option><option>m²</option></select></div>
+        <div class="full"><label class="f" for="sp">Precio pagado por esa cantidad en total</label><input id="sp" type="text" inputmode="decimal" placeholder="Ej: 95000"></div>
+        <div class="full"><label class="f" for="sx">Pesos extra por unidad (opcional)</label><input id="sx" type="text" inputmode="decimal" placeholder="Ej: 1500 de ganancia por litro"></div>
+        <button id="sadd" class="primary full">Guardar en stock</button>
+      </div>
+      <p class="msg" id="msgS" role="status"></p>
+      <details>
+        <summary>Pegar una lista de productos</summary>
+        <textarea id="bulk" aria-label="Lista de productos" placeholder="Yerba 4500&#10;Leche 1.250,50"></textarea>
+        <p class="hint">Una línea por producto con el precio al final. Cada uno entra como 1 unidad.</p>
+        <button id="addBulk">Agregar lista</button>
+      </details>
+    </div>
+    <div class="head"><span id="stockCount"></span><span id="stockValue"></span></div>
+    <ul class="list" id="stockList"></ul>
+  </section>
+
+  <section id="tab-hist" hidden>
+    <div class="head"><span id="histCount"></span><span id="histSum"></span></div>
+    <ul class="list" id="histList"></ul>
+  </section>
+</div>
+
+<div class="dlg" id="dlg" hidden><div class="dlg-box" role="dialog" aria-modal="true" aria-labelledby="dlgMsg"><p id="dlgMsg"></p><input id="dlgIn" type="text" inputmode="decimal"><div class="btns"><button id="dlgNo">Cancelar</button><button id="dlgOk" class="primary">Aceptar</button></div></div></div>
+<div class="bar" id="bar"><div class="bar-in">
+  <div><small id="barSub">Material + mano de obra</small><div class="tot" id="total">$ 0,00</div></div>
+  <button id="copy">Copiar resumen</button>
+</div></div>
+
+<script>
+(function(){
+  var KEY="calc-v2",tab="job";
+  function ask(msg,def,cb){
+    var d=$("dlg"),inp=$("dlgIn");$("dlgMsg").textContent=msg;
+    inp.style.display=def===null?"none":"";inp.value=def===null?"":def;d.hidden=false;
+    (def===null?$("dlgOk"):inp).focus();
+    function close(ok){d.hidden=true;$("dlgOk").onclick=null;$("dlgNo").onclick=null;inp.onkeydown=null;if(ok)cb(inp.value)}
+    $("dlgOk").onclick=function(){close(true)};$("dlgNo").onclick=function(){close(false)};
+    inp.onkeydown=function(e){if(e.key==="Enter")close(true);if(e.key==="Escape")close(false)};
+  }
+  var S={stock:[],job:{name:"",lines:[],hours:"",rate:""},history:[],deduct:true};
+  var $=function(id){return document.getElementById(id)};
+  var fmt=new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS"});
+  var nf=new Intl.NumberFormat("es-AR",{maximumFractionDigits:3});
+  var money=function(v){return fmt.format(v)};
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+  function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+  function parseNum(t){
+    t=String(t).replace(/[^\d.,]/g,"");if(!t)return NaN;
+    var d=t.indexOf("."),c=t.indexOf(",");
+    if(d>-1&&c>-1){if(t.lastIndexOf(",")>t.lastIndexOf("."))t=t.replace(/\./g,"").replace(",",".");else t=t.replace(/,/g,"")}
+    else if(c>-1){t=t.replace(",",".")}
+    else if(d>-1&&/^\d{1,3}(\.\d{3})+$/.test(t)){t=t.replace(/\./g,"")}
+    return parseFloat(t);
+  }
+  function say(id,t,ok){var e=$(id);e.textContent=t||"";e.className="msg"+(ok?" ok":"")}
+
+  /* carga */
+  try{var raw=localStorage.getItem(KEY);if(raw){var p=JSON.parse(raw);if(p&&p.stock)S=p}
+    else{var old=JSON.parse(localStorage.getItem("calc-productos")||"null");
+      if(old&&old.length)old.forEach(function(o){S.stock.push({id:uid(),name:o.name,price:o.price*o.qty,qty:o.qty,unit:"u",left:o.qty,up:o.price})})}
+  }catch(e){}
+
+  function find(id){for(var i=0;i<S.stock.length;i++)if(S.stock[i].id===id)return S.stock[i]}
+  function inJob(id){var n=0;S.job.lines.forEach(function(l){if(l.sid===id)n+=l.used});return n}
+  var FAM={g:["m",1],kg:["m",1000],ml:["v",1],L:["v",1000],cm:["l",1],m:["l",100]};
+  function conv(v,f,t){return FAM[f]&&FAM[t]&&FAM[f][0]===FAM[t][0]?v*FAM[f][1]/FAM[t][1]:v}
+  function qf(v,u){if(u==="kg"&&v<1)return nf.format(v*1000)+" g";if(u==="L"&&v<1)return nf.format(v*1000)+" ml";if(u==="m"&&v<1)return nf.format(v*100)+" cm";return nf.format(v)+" "+u}
+  function fillUnits(){
+    var s=find($("sel").value),u=$("usedU"),cur=u.value,opts=[];u.innerHTML="";
+    if(s){if(FAM[s.unit]){for(var k in FAM)if(FAM[k][0]===FAM[s.unit][0])opts.push(k);opts.sort(function(a,b){return FAM[a][1]-FAM[b][1]})}else opts=[s.unit]}
+    opts.forEach(function(k){var o=document.createElement("option");o.value=k;o.textContent=k;u.appendChild(o)});
+    u.value=opts.indexOf(cur)>-1?cur:(opts[0]||"");
+  }
+  function lc(l){return l.used*((l.up||0)+(l.mk||0))+(l.x||0)}
+  function totals(){
+    var m=0;S.job.lines.forEach(function(l){m+=lc(l)});
+    var h=parseNum(S.job.hours)||0,r=parseNum(S.job.rate)||0;
+    return{m:m,h:h,r:r,l:h*r,t:m+h*r};
+  }
+
+  /* trabajo */
+  function renderJob(){
+    var sel=$("sel"),cur=sel.value;sel.innerHTML="";
+    var avail=S.stock.filter(function(s){return s.left-inJob(s.id)>1e-9});
+    if(!avail.length){var o=document.createElement("option");o.value="";o.textContent=S.stock.length?"No queda stock disponible":"El stock está vacío: cargalo en la pestaña Stock";sel.appendChild(o)}
+    avail.forEach(function(s){var o=document.createElement("option");o.value=s.id;
+      o.textContent=s.name+" (quedan "+qf(s.left-inJob(s.id),s.unit)+")";sel.appendChild(o)});
+    if(cur&&find(cur))sel.value=cur;
+    fillUnits();
+
+    var ul=$("lines");ul.innerHTML="";
+    if(!S.job.lines.length)ul.innerHTML='<li class="empty">Elegí un producto y la cantidad que usaste.</li>';
+    S.job.lines.forEach(function(l,i){
+      var st=find(l.sid),rest=st?Math.max(0,st.left-l.used):0;
+      var li=document.createElement("li");
+      li.innerHTML='<div><div class="pname">'+esc(l.name)+'</div><div class="unit">'+esc(qf(l.used,l.unit))+' a '+money((l.up||0)+(l.mk||0))+' por '+esc(l.unit)+(l.x?' + '+money(l.x)+' extra':'')+(S.deduct?' · quedarán '+esc(qf(rest,l.unit)):'')+'</div></div>'+
+        '<div class="sub">'+money(lc(l))+'</div><div class="acts"><button class="ghost" data-x="'+i+'">+ Pesos</button><button class="ghost" data-i="'+i+'" aria-label="Quitar '+esc(l.name)+'">Quitar</button></div>';
+      ul.appendChild(li);
+    });
+    $("lineCount").textContent=S.job.lines.length?S.job.lines.length+(S.job.lines.length===1?" material":" materiales"):"Sin material";
+    renderTotals();
+  }
+  function renderTotals(){
+    var t=totals();
+    $("laborOut").textContent=t.h&&t.r?nf.format(t.h)+" h × "+money(t.r)+" = "+money(t.l):"Ingresá horas y tarifa para sumar la mano de obra.";
+    $("total").textContent=money(t.t);
+    $("barSub").textContent="Material "+money(t.m)+" + mano de obra "+money(t.l);
+  }
+  $("sel").onchange=fillUnits;
+  $("addUse").onclick=function(){
+    var s=find($("sel").value),u=parseNum($("used").value);if(s&&!isNaN(u))u=conv(u,$("usedU").value,s.unit);
+    if(!s){say("msgJ","Elegí un producto del stock.");return}
+    if(isNaN(u)||u<=0){say("msgJ","Ingresá cuánto usaste.");$("used").focus();return}
+    var av=s.left-inJob(s.id);
+    if(u>av+1e-9){say("msgJ","Solo quedan "+qf(av,s.unit)+" de "+s.name+".");return}
+    var ex=S.job.lines.filter(function(l){return l.sid===s.id})[0];
+    if(ex)ex.used+=u;else S.job.lines.push({sid:s.id,name:s.name,unit:s.unit,used:u,up:s.up,mk:s.mk||0});
+    $("used").value="";say("msgJ","");say("msgF","");save();renderJob();
+  };
+  $("used").addEventListener("keydown",function(e){if(e.key==="Enter")$("addUse").click()});
+  $("lines").onclick=function(e){
+    var i=e.target.getAttribute("data-i"),x=e.target.getAttribute("data-x");
+    if(i!==null){S.job.lines.splice(+i,1);save();renderJob()}
+    else if(x!==null){var l=S.job.lines[+x];ask("¿Cuántos pesos querés sumarle a "+l.name+" en este trabajo? (0 para quitar)",l.x?String(l.x).replace(".",","):"",function(v){var n=parseNum(v);l.x=isNaN(n)||n<0?0:n;save();renderJob()})}
+  };
+  $("jname").oninput=function(){S.job.name=this.value;save()};
+  $("hours").oninput=function(){S.job.hours=this.value;save();renderTotals()};
+  $("rate").oninput=function(){S.job.rate=this.value;save();renderTotals()};
+  $("deduct").onchange=function(){S.deduct=this.checked;save();renderJob()};
+  $("discard").onclick=function(){
+    if((S.job.lines.length||S.job.hours||S.job.name)){ask("¿Descartar este trabajo? El stock no se modifica.",null,function(){resetJob();say("msgF","")});return}
+    resetJob();say("msgF","");
+  };
+  function resetJob(){S.job={name:"",lines:[],hours:"",rate:S.job.rate};$("jname").value="";$("hours").value="";save();renderJob()}
+  $("finish").onclick=function(){
+    var t=totals();
+    if(!S.job.lines.length&&!t.l){say("msgF","Sumá material o mano de obra antes de finalizar.");return}
+    var rec={id:uid(),date:new Date().toISOString(),name:S.job.name.trim()||"Trabajo sin nombre",lines:S.job.lines.slice(),hours:t.h,rate:t.r,m:t.m,l:t.l,t:t.t,deducted:S.deduct};
+    if(S.deduct)S.job.lines.forEach(function(l){var s=find(l.sid);if(s)s.left=Math.max(0,s.left-l.used)});
+    S.history.unshift(rec);resetJob();renderStock();renderHist();
+    say("msgF",S.deduct?"Trabajo guardado. El stock restante quedó listo para el próximo.":"Trabajo guardado. El stock no se modificó.",true);
+  };
+  $("copy").onclick=function(){
+    var t=totals(),L=["Trabajo: "+(S.job.name||"sin nombre")];
+    S.job.lines.forEach(function(l){L.push("- "+l.name+": "+qf(l.used,l.unit)+" = "+money(lc(l)))});
+    if(t.l)L.push("Mano de obra: "+nf.format(t.h)+" h × "+money(t.r)+" = "+money(t.l));
+    L.push("Total: "+money(t.t));
+    var b=$("copy"),done=function(){b.textContent="¡Copiado!";setTimeout(function(){b.textContent="Copiar resumen"},1500)};
+    try{navigator.clipboard.writeText(L.join("\n")).then(done,function(){})}catch(e){}
+  };
+
+  /* stock */
+  function renderStock(){
+    var ul=$("stockList");ul.innerHTML="";
+    if(!S.stock.length)ul.innerHTML='<li class="empty">Cargá lo que comprás y acá queda lo que te sobra.</li>';
+    var val=0;
+    S.stock.forEach(function(s){
+      val+=s.left*s.up;
+      var pct=Math.min(100,s.left/Math.max(s.qty,s.left,1e-9)*100);
+      var li=document.createElement("li");
+      li.innerHTML='<div><div class="pname">'+esc(s.name)+'</div><div class="unit">'+money(s.up)+(s.mk?' + '+money(s.mk)+' extra':'')+' por '+esc(s.unit)+'</div><div class="meter"><i style="width:'+pct+'%"></i></div></div>'+
+        '<div class="left">'+esc(qf(s.left,s.unit))+'<small>de '+esc(qf(s.qty,s.unit))+'</small></div>'+
+        '<div class="acts"><button class="ghost" data-a="mk" data-id="'+s.id+'">Extra $</button><button class="ghost" data-a="adj" data-id="'+s.id+'">Ajustar</button><button class="ghost" data-a="del" data-id="'+s.id+'">Quitar</button></div>';
+      ul.appendChild(li);
+    });
+    $("stockCount").textContent=S.stock.length+(S.stock.length===1?" producto":" productos");
+    $("stockValue").textContent="Valor en stock: "+money(val);
+  }
+  $("stockList").onclick=function(e){
+    var a=e.target.getAttribute("data-a"),s=find(e.target.getAttribute("data-id"));if(!a||!s)return;
+    if(a==="del"){ask("¿Quitar "+s.name+" del stock?",null,function(){S.stock=S.stock.filter(function(x){return x!==s});S.job.lines=S.job.lines.filter(function(l){return l.sid!==s.id});save();renderStock();renderJob()});return}
+    else if(a==="mk"){ask("Pesos extra por "+s.unit+" de "+s.name+" (0 para quitar)",s.mk?String(s.mk).replace(".",","):"",function(w){var y=parseNum(w);s.mk=isNaN(y)||y<0?0:y;save();renderStock();renderJob()});return}
+    else{ask("¿Cuánto queda de "+s.name+" ("+s.unit+")?",String(s.left).replace(".",","),function(v){var n=parseNum(v);if(isNaN(n)||n<0)return;s.left=n;save();renderStock();renderJob()});return}
+    save();renderStock();renderJob();
+  };
+  $("sadd").onclick=function(){
+    var name=$("sn").value.trim(),q=parseNum($("sq").value),pr=parseNum($("sp").value);
+    if(!name){say("msgS","Escribí el nombre del producto.");return}
+    if(isNaN(q)||q<=0){say("msgS","Ingresá la cantidad que compraste.");return}
+    if(isNaN(pr)||pr<0){say("msgS","Ingresá el precio pagado.");return}
+    S.stock.push({id:uid(),name:name,price:pr,qty:q,unit:$("su").value,left:q,up:pr/q,mk:Math.max(0,parseNum($("sx").value)||0)});
+    $("sn").value="";$("sq").value="";$("sp").value="";$("sx").value="";say("msgS","Guardado en stock.",true);
+    save();renderStock();renderJob();
+  };
+  $("addBulk").onclick=function(){
+    var bad=[],ok=0;
+    $("bulk").value.split(/\r?\n/).forEach(function(l){
+      l=l.trim();if(!l)return;
+      var m=l.match(/^(.*?)[\s:;\-–=]*\$?\s*(\d[\d.,]*)\s*$/),pr=m?parseNum(m[2]):NaN,nm=m?m[1].replace(/[\s:;\-–=$]+$/,"").trim():"";
+      if(!m||!nm||isNaN(pr)){bad.push(l);return}
+      S.stock.push({id:uid(),name:nm,price:pr,qty:1,unit:"u",left:1,up:pr});ok++;
+    });
+    $("bulk").value=bad.join("\n");
+    say("msgS",bad.length?bad.length+" línea(s) sin precio válido quedaron en el cuadro.":(ok?ok+" productos agregados.":""),!bad.length&&ok>0);
+    if(ok){save();renderStock();renderJob()}
+  };
+
+  /* historial */
+  function renderHist(){
+    var ul=$("histList");ul.innerHTML="";var sum=0;
+    if(!S.history.length)ul.innerHTML='<li class="empty">Los trabajos que finalices aparecen acá.</li>';
+    S.history.forEach(function(h,i){
+      sum+=h.t;
+      var li=document.createElement("li");
+      li.innerHTML='<div><div class="pname">'+esc(h.name)+'</div><div class="unit">'+new Date(h.date).toLocaleDateString("es-AR")+'. Material '+money(h.m)+', mano de obra '+money(h.l)+(h.hours?' ('+nf.format(h.hours)+' h)':'')+'</div></div>'+
+        '<div class="sub">'+money(h.t)+'</div><button class="ghost" data-i="'+i+'">Quitar</button>';
+      ul.appendChild(li);
+    });
+    $("histCount").textContent=S.history.length+(S.history.length===1?" trabajo":" trabajos");
+    $("histSum").textContent="Total: "+money(sum);
+  }
+  $("histList").onclick=function(e){var i=e.target.getAttribute("data-i");if(i!==null)ask("¿Quitar este trabajo del historial? El stock no se modifica.",null,function(){S.history.splice(+i,1);save();renderHist()})};
+
+  /* pestañas */
+  function setTab(t){
+    tab=t;
+    ["job","stock","hist"].forEach(function(n){$("tab-"+n).hidden=n!==t});
+    document.querySelectorAll(".tabs button").forEach(function(b){b.setAttribute("aria-selected",b.getAttribute("data-tab")===t)});
+    $("bar").hidden=t!=="job";
+  }
+  document.querySelectorAll(".tabs button").forEach(function(b){b.onclick=function(){setTab(b.getAttribute("data-tab"))}});
+
+  $("jname").value=S.job.name||"";$("hours").value=S.job.hours||"";$("rate").value=S.job.rate||"";$("deduct").checked=S.deduct!==false;
+  setTab("job");renderStock();renderJob();renderHist();
+})();
+</script>
+</body>
+</html>
