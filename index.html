@@ -69,6 +69,11 @@ details textarea{min-height:100px;margin:10px 0 6px;font-family:"IBM Plex Mono",
 .bar .tot{font-size:1.8rem;font-weight:600;line-height:1.1;letter-spacing:-.02em}
 .bar button{background:transparent;color:inherit;border-color:currentColor;opacity:.9}
 .dlg{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.det{grid-column:1/-1;border-top:1px dashed var(--line);margin-top:6px;padding-top:8px}
+.dl{display:flex;justify-content:space-between;gap:12px;padding:4px 0}
+.dl small{display:block;color:var(--muted);font-size:.82rem;font-family:"IBM Plex Mono",ui-monospace,monospace}
+.dl b{font-family:"IBM Plex Mono",ui-monospace,monospace;font-weight:600;white-space:nowrap}
+.dl.tt{border-top:1px solid var(--line);margin-top:4px;padding-top:6px}
 .dlg[hidden]{display:none}
 .dlg-box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;width:100%;max-width:360px}
 .dlg-box p{margin:0 0 12px;font-weight:500}.dlg-box input{margin-bottom:12px}
@@ -324,20 +329,34 @@ details textarea{min-height:100px;margin:10px 0 6px;font-family:"IBM Plex Mono",
   };
 
   /* historial */
+  var openH=null;
+  function detail(h){
+    var r='<div class="det">';
+    h.lines.forEach(function(l){
+      var pu=(l.up||0)+(l.mk||0);
+      r+='<div class="dl"><span>'+esc(l.name)+'<small>'+esc(qf(l.used,l.unit))+' a '+money(pu)+' por '+esc(l.unit)+(l.x?' + '+money(l.x)+' extra':'')+'</small></span><b>'+money(lc(l))+'</b></div>';
+    });
+    if(!h.lines.length)r+='<div class="dl"><span>Sin material</span><b>'+money(0)+'</b></div>';
+    r+='<div class="dl tt"><span>Material</span><b>'+money(h.m)+'</b></div>';
+    r+='<div class="dl"><span>Mano de obra<small>'+(h.hours&&h.rate?nf.format(h.hours)+' h × '+money(h.rate):'Sin horas cargadas')+'</small></span><b>'+money(h.l)+'</b></div>';
+    r+='<div class="dl tt"><span>Total</span><b>'+money(h.t)+'</b></div>';
+    r+='<p class="hint">'+(h.deducted?'Lo usado se descontó del stock.':'No se descontó del stock.')+'</p></div>';
+    return r;
+  }
   function renderHist(){
     var ul=$("histList");ul.innerHTML="";var sum=0;
     if(!S.history.length)ul.innerHTML='<li class="empty">Los trabajos que finalices aparecen acá.</li>';
     S.history.forEach(function(h,i){
       sum+=h.t;
       var li=document.createElement("li");
-      li.innerHTML='<div><div class="pname">'+esc(h.name)+'</div><div class="unit">'+new Date(h.date).toLocaleDateString("es-AR")+'. Material '+money(h.m)+', mano de obra '+money(h.l)+(h.hours?' ('+nf.format(h.hours)+' h)':'')+'</div></div>'+
-        '<div class="sub">'+money(h.t)+'</div><button class="ghost" data-i="'+i+'">Quitar</button>';
+      li.innerHTML='<div><div class="pname" data-d="'+h.id+'" style="cursor:pointer">'+esc(h.name)+'</div><div class="unit">'+new Date(h.date).toLocaleDateString("es-AR")+'. Material '+money(h.m)+', mano de obra '+money(h.l)+(h.hours?' ('+nf.format(h.hours)+' h)':'')+'</div></div>'+
+        '<div class="sub">'+money(h.t)+'</div><div class="acts"><button class="ghost" data-d="'+h.id+'">'+(openH===h.id?'Ocultar':'Ver detalle')+'</button><button class="ghost" data-i="'+i+'">Quitar</button></div>'+(openH===h.id?detail(h):'');
       ul.appendChild(li);
     });
     $("histCount").textContent=S.history.length+(S.history.length===1?" trabajo":" trabajos");
     $("histSum").textContent="Total: "+money(sum);
   }
-  $("histList").onclick=function(e){var i=e.target.getAttribute("data-i");if(i!==null)ask("¿Quitar este trabajo del historial? El stock no se modifica.",null,function(){S.history.splice(+i,1);save();renderHist()})};
+  $("histList").onclick=function(e){var dd=e.target.getAttribute("data-d");if(dd){openH=openH===dd?null:dd;renderHist();return}var i=e.target.getAttribute("data-i");if(i!==null)ask("¿Quitar este trabajo del historial? El stock no se modifica.",null,function(){S.history.splice(+i,1);save();renderHist()})};
 
   /* pestañas */
   function setTab(t){
